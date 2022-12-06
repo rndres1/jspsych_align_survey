@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Alignment Survey</title>
+    <script src="./jspsych/dist/jspsych.js"></script>
+    <script src="./jspsych/dist/plugin-html-keyboard-response.js"></script>
+    <script src="./jspsych/dist/plugin-survey.js"></script>
+    <script src="./jspsych/dist/plugin-preload.js"></script>
+    <script src="./jspsych/dist/plugin-instructions.js"></script>
+    <script src="./jspsych/dist/plugin-image-button-response.js"></script>
+    <script src="./jspsych/dist/plugin-call-function.js"></script>
+    <script src="./jspsych/dist/plugin-survey-html-form.js"></script>
+
+    <script src="./fnames.js"></script>
+    <script src="./shuffle.js"></script>
+    
+    <link href="./jspsych/dist/jspsych.css" rel="stylesheet" type="text/css" />
+    <!-- <link href="./customstyles.css" rel="stylesheet" type="text/css" /> -->
+    <!-- <link rel="stylesheet" href="./jspsych/dist/survey.css"> !-->
+  </head>
+<body>
+</body> 
+
+<script>
+const jsPsych = initJsPsych({
+    show_progress_bar: true,
+    on_finish: function() {
+        jsPsych.data.displayData('csv');
+    }
+}); 
+var internal_PID = String(Math.ceil(Math.random()*100000));
+// capture info from Prolific
+var subject_id = jsPsych.data.getURLVariable('PROLIFIC_PID');
+var study_id = jsPsych.data.getURLVariable('STUDY_ID');
+var session_id = jsPsych.data.getURLVariable('SESSION_ID');
+
+/*
+jsPsych.data.addProperties({
+    subject_id: subject_id,
+    study_id: study_id,
+    session_id: session_id,
+});*/
+var timeline = [];
+basedir = './media/stimuli/';
+
+//files_demo = shuffle(filenames.slice(99,109)); // DEBUGGING
+files_demo = shuffle(filenames); // final
+
+for(findx=0;findx<files_demo.length;findx++)
+{
+  files_demo[findx] = basedir+files_demo[findx];
+}
+var preload = {
+    type: jsPsychPreload,
+    images: files_demo,
+    max_load_time: 300000,
+    message: 'Please wait while the experiment loads. This may take a few minutes.'
+};
+timeline.push(preload);
+
+var instructions = {
+    type: jsPsychInstructions,
+    pages: [
+    `You are being invited to participate in a research study titled "Emotional Alignment of AI Systems".<br><br> This study is being done by Dr. James Lomas from the TU Delft. The purpose of this research study is to understand how well different AI systems can produce media that aligns with different human emotions. The study will take you approximately 25 minutes to complete. The data will be used for benchmarking different AI systems, for scientific publication and for public communication. We will be asking you to rate the alignment of different images and text.`,
+    `Your task is to look at each image or read each story, and read the emotion in bold mentioned underneath it. Then, your task is to provide a rating of how well the material aligns with the name of the emotion.`,
+    `As with any online activity the risk of a breach is always possible. To the best of our ability your answers in this study will remain confidential. We will minimize any risks by collecting minimal personal information. We intend to make the data collected in this study open to analysis by other researchers. <br><br> Your participation in this study is entirely voluntary and you can withdraw at any time. You are free to omit any questions. <br> Responsible researcher: James Lomas, j.d.lomas@tudelft.nl <br><br> By clicking through this anonymous survey, you provide your informed consent to this statement.`
+  ],
+    show_clickable_nav: true,
+    allow_backward: true
+}
+timeline.push(instructions);
+
+var demographic_trial = {
+  type: jsPsychSurveyHtmlForm,
+  preamble: '<p>Tell us a bit about yourself (demographic questions)</p>',
+  html: `<p>Age <input type="number" id="question1" name="input_age" size="4" /></p> 
+        <p> Gender <select name="input_gender"> <option value="Male">Male</option> <option value="Female">Female</option> <option value="Other">Other</option> </select></p>
+        <p> Highest educational qualification <select name="input_edu"> <option value="highschool">High school</option> <option value="grad">College degree or diploma</option> <option value="postgrad">Postgraduate degree or higher</option> </select> </p>
+        <p> Nationality <input type="text" name="input_nationality"> </p>
+        `,
+  autofocus: 'question1',
+  button_label: "Begin experiment"
+};
+timeline.push(demographic_trial);
+
+for(findx=0;findx<files_demo.length;findx++)
+{
+  fname = files_demo[findx];
+  promptbase = fname.split("-")[1];
+  spl1=promptbase.trim().split(" ");
+  prompt1 = spl1[spl1.length-1];
+  if (prompt1=="Surprise")
+  {
+    prompt1 = "positive surprise";
+  }
+  prompt1 = "expressing the emotion " + prompt1;
+  var survey_trial1 = {
+      type: jsPsychImageButtonResponse,
+      prompt: '<p> Rate the alignment of the image to the text: <br><b>' + prompt1 + '</b></p>',
+      choices: ['0','1','2','3','4','5','6','7','8','9','10'],
+      timeline: [ {stimulus: fname} ],
+      stimulus_width: 512,
+      maintain_aspect_ratio: true,
+      render_on_canvas: false,
+      button_html: '<button class="jspsych-btn">%choice%</button>'
+  }
+  timeline.push(survey_trial1);
+}
+
+// to Netlify function...
+var data_save_trial = {
+    type: jsPsychCallFunction,
+    async: true,
+    func: function(done){
+      senddata = {
+        jspsych_data_all: jsPsych.data.get(),
+        PROLIFIC_PID: subject_id,
+        PROLIFIC_STUDY_ID: study_id,
+        PROLIFIC_SESSION_ID: session_id,
+        jspsych_pid: internal_PID
+      };
+      senddata = JSON.stringify(senddata);
+      var xhr = new XMLHttpRequest();
+      ntl_URL = window.location.origin + "/.netlify/functions/save2airtable";
+      xhr.open('POST', ntl_URL, true);
+      xhr.setRequestHeader('Content-Type', 'application/json');
+      xhr.onload = function() {
+        if(xhr.status == 200){
+          console.log("OK from save2airtable"); // not necessary
+        }
+        done(); // "invoking done() causes experiment to progress to next trial" ... ?? where/what is done defined
+      };
+      xhr.send(senddata);
+    }  // end of anon function for jsPsychCallFunction
+};
+timeline.push(data_save_trial);
+
+var final_trial = {
+  type: jsPsychHtmlKeyboardResponse,
+  stimulus: `<p>You have completed the task. Thanks for participating!</p>
+    <p><b>IMPORTANT: </b><a href="https://app.prolific.co/submissions/complete?cc=C1EDKT4S">Click here to return to Prolific and receive your money.</a>.</p>`,
+  choices: "NO_KEYS"
+};
+timeline.push(final_trial);
+
+console.log("Ready");
+jsPsych.run(timeline);
+
+</script>
+</html>
