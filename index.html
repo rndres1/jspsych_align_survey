@@ -23,10 +23,7 @@
 
 <script>
 const jsPsych = initJsPsych({
-    show_progress_bar: true,
-    on_finish: function() {
-        jsPsych.data.displayData('csv');
-    }
+    show_progress_bar: true
 }); 
 var internal_PID = String(Math.ceil(Math.random()*100000));
 // capture info from Prolific
