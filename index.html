@@ -26,7 +26,7 @@ const jsPsych = initJsPsych({
     show_progress_bar: true
 }); 
 var internal_PID = String(Math.ceil(Math.random()*100000));
-// capture info from Prolific
+// from Prolific URL params
 var subject_id = jsPsych.data.getURLVariable('PROLIFIC_PID');
 var study_id = jsPsych.data.getURLVariable('STUDY_ID');
 var session_id = jsPsych.data.getURLVariable('SESSION_ID');
@@ -40,16 +40,16 @@ jsPsych.data.addProperties({
 var timeline = [];
 basedir = './media/stimuli/';
 
-//files_demo = shuffle(filenames.slice(99,109)); // DEBUGGING
-files_demo = shuffle(filenames); // final
+files_used = shuffle(filenames.slice(99,109)); // DEBUGGING
+//files_used = shuffle(filenames); // final
 
-for(findx=0;findx<files_demo.length;findx++)
+for(findx=0;findx<files_used.length;findx++)
 {
-  files_demo[findx] = basedir+files_demo[findx];
+  files_used[findx] = basedir+files_used[findx];
 }
 var preload = {
     type: jsPsychPreload,
-    images: files_demo,
+    images: files_used,
     max_load_time: 300000,
     message: 'Please wait while the experiment loads. This may take a few minutes.'
 };
@@ -80,9 +80,9 @@ var demographic_trial = {
 };
 timeline.push(demographic_trial);
 
-for(findx=0;findx<files_demo.length;findx++)
+for(findx=0;findx<files_used.length;findx++)
 {
-  fname = files_demo[findx];
+  fname = files_used[findx];
   promptbase = fname.split("-")[1];
   spl1=promptbase.trim().split(" ");
   prompt1 = spl1[spl1.length-1];
@@ -125,7 +125,7 @@ var data_save_trial = {
         if(xhr.status == 200){
           console.log("OK from save2airtable"); // not necessary
         }
-        done(); // "invoking done() causes experiment to progress to next trial" ... ?? where/what is done defined
+        done(); // "invoking done() causes experiment to progress to next trial"
       };
       xhr.send(senddata);
     }  // end of anon function for jsPsychCallFunction
@@ -135,7 +135,7 @@ timeline.push(data_save_trial);
 var final_trial = {
   type: jsPsychHtmlKeyboardResponse,
   stimulus: `<p>You have completed the task. Thanks for participating!</p>
-    <p><b>IMPORTANT: </b><a href="https://app.prolific.co/submissions/complete?cc=C1EDKT4S">Click here to return to Prolific and receive your money.</a>.</p>`,
+    <p><b>IMPORTANT: </b><a href="https://app.prolific.co/submissions/complete?cc=C1EDKT4S">Click here to return to Prolific and receive your money</a>.</p>`,
   choices: "NO_KEYS"
 };
 timeline.push(final_trial);
