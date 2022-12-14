@@ -40,7 +40,7 @@ jsPsych.data.addProperties({
 var timeline = [];
 basedir = './media/stimuli/';
 
-files_used = shuffle(filenames.slice(99,109)); // DEBUGGING
+files_used = shuffle(filenames.slice(29,31)); // DEBUGGING
 //files_used = shuffle(filenames); // final
 
 for(findx=0;findx<files_used.length;findx++)
@@ -65,7 +65,7 @@ var instructions = {
     show_clickable_nav: true,
     allow_backward: true
 }
-timeline.push(instructions);
+//timeline.push(instructions);
 
 var demographic_trial = {
   type: jsPsychSurveyHtmlForm,
@@ -78,7 +78,7 @@ var demographic_trial = {
   autofocus: 'question1',
   button_label: "Begin experiment"
 };
-timeline.push(demographic_trial);
+//timeline.push(demographic_trial);
 
 for(findx=0;findx<files_used.length;findx++)
 {
@@ -124,6 +124,7 @@ var data_save_trial = {
       xhr.onload = function() {
         if(xhr.status == 200){
           console.log("OK from save2airtable"); // not necessary
+          console.log(xhr.responseText);
         }
         done(); // "invoking done() causes experiment to progress to next trial"
       };

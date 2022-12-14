@@ -49,26 +49,20 @@ exports.handler = async event => {
       }}];
 
   //console.log(newData);
-
-  await table.create(newData, {typecast: true}, function(err, records) {
-    if (err) {
-      console.error(err);
-      return;
-    }
-    records.forEach(function (record) {
+try{
+  records = await table.create(newData, {typecast: true}); // THIS IS the way
+  records.forEach(function (record) {
       console.log("Airtable record " + record.getId() + " created");
     });
-  });
-
-
-  // weird hack: sleeping ensures the API call finishes and data gets written, otherwise Netlify kills the process too soon
+   // weird hack: sleeping ensures the API call finishes and data gets written, otherwise Netlify kills the process too soon
   await sleep(800); // milliseconds
-  
-
-  // todo : return the airtable id if success or return error code
   return {
     statusCode: 200,
-    body: "OK"  
+    body: "Record id is " + records[0].getId() 
   }
-
+}//try ends
+catch(err){
+  console.error(err)
 }
+
+} // exports.handler ends
